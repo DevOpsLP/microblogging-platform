@@ -62,7 +62,7 @@ services:
       tweet-service:
         condition: service_started
     environment:
-      TWEET_SERVICE_URL: http://tweet-service:8081
+      TWEET_SERVICE_URL: http://tweet-service:8081/tweets
       DB_HOST: postgres-db
       DB_PORT: 5432
       DB_USER: devuser
