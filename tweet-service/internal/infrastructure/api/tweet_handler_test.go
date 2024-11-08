@@ -72,7 +72,6 @@ func getRandomUser() (*domain.User, error) {
 
 func TestTweetFlowWithHTTPUserRepo(t *testing.T) {
 	setupTestDB()
-	defer testDB.Exec("DELETE FROM tweets")
 
 	// Obtener dos usuarios aleatorios desde user-service
 	user1, err := getRandomUser()
