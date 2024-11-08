@@ -1,0 +1,78 @@
+services:
+  postgres-db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devuser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build:
+      context: ./user-service
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://devuser:devpassword@postgres-db:5432/userdb
+      DB_HOST: postgres-db
+      DB_PORT: 5432
+      DB_USER: devuser
+      DB_PASSWORD: devpassword
+      DB_NAME: userdb
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+
+  tweet-service:
+    build:
+      context: ./tweet-service
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://devuser:devpassword@postgres-db:5432/tweetdb
+      USER_SERVICE_URL: http://user-service:8080
+      DB_HOST: postgres-db
+      DB_PORT: 5432
+      DB_USER: devuser
+      DB_PASSWORD: devpassword
+      DB_NAME: tweetdb
+    ports:
+      - "8081:8081"
+    networks:
+      - app-network
+
+  timeline-service:
+    build:
+      context: ./timeline-service
+    depends_on:
+      tweet-service:
+        condition: service_started
+    environment:
+      TWEET_SERVICE_URL: http://tweet-service:8081
+      DB_HOST: postgres-db
+      DB_PORT: 5432
+      DB_USER: devuser
+      DB_PASSWORD: devpassword
+      DB_NAME: timeline
+    ports:
+      - "8082:8082"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
